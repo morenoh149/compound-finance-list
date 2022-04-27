@@ -7,7 +7,7 @@ function App() {
   const [fetching, setFetching] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [total, setTotal] = useState(0);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [filterColumn, setFilterColumn] = useState('total_borrow_value_in_eth');
   const [minBorrowed, setMinBorrowed] = useState(0);
@@ -18,7 +18,7 @@ function App() {
       "max_health": {
         "value": "1.0"
       },
-      "page_number": currentPage + 1,
+      "page_number": currentPage,
       "page_size": 100
     };
     fetch('https://api.compound.finance/api/v2/account', {
@@ -36,7 +36,6 @@ function App() {
         setFetching(false);
         setAccounts(accounts => accounts.concat(result.accounts));
         setTotal(result.pagination_summary.total_entries);
-        setCurrentPage(currentPage => result.pagination_summary.page_number);
         setTotalPages(result.pagination_summary.total_pages);
       },
       (error) => {
@@ -46,7 +45,7 @@ function App() {
       }
     )
   };
-  useEffect(loadPage, []);
+  useEffect(loadPage, [currentPage]);
 
   const Filters = () => {
     return (<>
@@ -65,9 +64,9 @@ function App() {
 
   const LoadMore = () => {
     return fetching
-      ? <button>Loading Page {currentPage+1}...</button>
+      ? <button>Loading Page {currentPage}...</button>
       : currentPage < totalPages
-        ? <button onClick={loadPage}>Next Page</button>
+        ? <button onClick={() => setCurrentPage(currentPage+1)}>Next Page</button>
         : <div className="end-list">End of list</div>
       ;
   }
