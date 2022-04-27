@@ -1,0 +1,13 @@
+.App {
+  text-align: left;
+  font-family: monospace;
+}
+
+button {
+  font-size: 30px;
+}
+
+.end-list {
+  color: red;
+  font-size: 30px;
+}
