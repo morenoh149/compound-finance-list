@@ -34,9 +34,9 @@ function App() {
       (result) => {
         setIsLoaded(true);
         setFetching(false);
-        setAccounts(accounts.concat(result.accounts));
+        setAccounts(accounts => accounts.concat(result.accounts));
         setTotal(result.pagination_summary.total_entries);
-        setCurrentPage(result.pagination_summary.page_number);
+        setCurrentPage(currentPage => result.pagination_summary.page_number);
         setTotalPages(result.pagination_summary.total_pages);
       },
       (error) => {
