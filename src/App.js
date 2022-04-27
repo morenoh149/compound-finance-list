@@ -1,51 +1,24 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import './App.css';
 
-class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      error: null,
-      isLoaded: false,
-      fetching: false,
-      accounts: [],
-      total: 0,
-      currentPage: 0,
-      totalPages: 0,
-      minBorrowed: 0,
-      filterColumn: 'total_borrow_value_in_eth'
-    };
+function App() {
+  const [error, setError] = useState(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const [accounts, setAccounts] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [filterColumn, setFilterColumn] = useState('total_borrow_value_in_eth');
+  const [minBorrowed, setMinBorrowed] = useState(0);
 
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSelectChange = this.handleSelectChange.bind(this);
-  }
-
-  componentDidMount() {
-    this.loadPage();
-  }
-
-  /*
-   * loadPage calls the Compound api and display the next page of
-   * at risk acccounts
-   */
-  loadPage = () => {
-    /* curl command to emulate
-    curl -s -X POST https://api.compound.finance/api/v2/account -d '{"max_health":{"value":"1.0"}}' | jq '.pagination_summary'
-    {
-      "page_number": 1,
-      "page_size": 10,
-      "total_entries": 834,
-      "total_pages": 84
-    }
-    */
-    this.setState({
-      fetching: true
-    })
+  const loadPage = () => {
+    setFetching(true);
     const requestBody = {
       "max_health": {
         "value": "1.0"
       },
-      "page_number": this.state.currentPage + 1,
+      "page_number": currentPage + 1,
       "page_size": 100
     };
     fetch('https://api.compound.finance/api/v2/account', {
@@ -55,82 +28,93 @@ class App extends React.Component {
         'Accept': 'application/json'
       },
       body: JSON.stringify(requestBody)
-    }).then(res => res.json())
-    .then(result => {
-      this.setState({
-        isLoaded: true,
-        fetching: false,
-        accounts: this.state.accounts.concat(result.accounts),
-        total: result.pagination_summary.total_entries,
-        currentPage: result.pagination_summary.page_number,
-        totalPages: result.pagination_summary.total_pages
-      });
-    },
-    error => {
-      this.setState({
-        isLoaded: true,
-        fetchin: false,
-        error
-      });
     })
+    .then(res => res.json())
+    .then(
+      (result) => {
+        setIsLoaded(true);
+        setFetching(false);
+        setAccounts(accounts.concat(result.accounts));
+        setTotal(result.pagination_summary.total_entries);
+        setCurrentPage(result.pagination_summary.page_number);
+        setTotalPages(result.pagination_summary.total_pages);
+      },
+      (error) => {
+        setIsLoaded(true);
+        setFetching(false);
+        setError(error);
+      }
+    )
+  };
+  useEffect(loadPage, []);
+
+  const Filters = () => {
+    return (<>
+      Filter accounts by amount 
+      <select value={filterColumn} onChange={e => setFilterColumn(e.target.value)}>
+        <option value="total_collateral_value_in_eth">Collateral</option>
+        <option value="total_borrow_value_in_eth">Borrowed</option>
+      </select>
+      :
+      <input
+        type="number" min="0" step="0.01" value={minBorrowed}
+        onChange={e => setMinBorrowed(e.target.value)}
+      /> 
+    </>);
   }
 
-  handleChange(event) {
-    this.setState({minBorrowed: event.target.value});
+  const LoadMore = () => {
+    return fetching
+      ? <button>Loading Page {currentPage+1}...</button>
+      : currentPage < totalPages
+        ? <button onClick={loadPage}>Next Page</button>
+        : <div className="end-list">End of list</div>
+      ;
   }
-  handleSelectChange(event) {
-    this.setState({filterColumn: event.target.value});
+
+  if (!isLoaded || fetching) {
+    document.documentElement.style.cursor = 'wait';
+  } else {
+    document.documentElement.style.cursor = 'auto';
   }
 
-  render() {
-    const {
-      error,
-      isLoaded,
-      fetching, accounts, total, currentPage,
-      totalPages, minBorrowed, filterColumn
-    } = this.state;
+  let accountsToRender = accounts.filter(account => account[filterColumn].value >= minBorrowed);
 
-    let accountsToRender = accounts.filter(account => account[filterColumn].value >= minBorrowed);
-
-    if (error) {
-      return <div>Error: {error.message}</div>;
-    } else if (!isLoaded) {
-      return <div>Loading...</div>;
-    } else {
-      return (
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  } else if (!isLoaded) {
+    return <div>Loading...</div>;
+  } else {
+    return (
       <div className="App">
         <p>
           Compound list of accounts at risk of liquidation
         </p>
         <p>total: {total}</p>
-        Filter accounts by amount 
-        <select value={filterColumn} onChange={this.handleSelectChange}>
-          <option value="total_collateral_value_in_eth">Collateral</option>
-          <option value="total_borrow_value_in_eth">Borrowed</option>
-        </select>
-        :
-        <input type="number" min="0" step="0.01" value={minBorrowed} onChange={this.handleChange}/>
+        <Filters />
         <table>
           <thead>
             <tr>
+              <th>Count</th>
               <th>Address</th>
               <th>Amount of Collateral</th>
               <th>Amount Borrowed</th>
             </tr>
           </thead>
           <tbody>
-            {accountsToRender.map(account => <Account account={account} />)}
+            {accountsToRender.map(
+              (account, i) => <Account
+                account={account}
+                count={i+1}
+                key={account.address}
+              />
+            )}
           </tbody>
         </table>
-        {fetching
-        ? <button>Loading Page {currentPage+1}...</button>
-        : currentPage < totalPages
-          ? <button onClick={this.loadPage}>Next Page</button>
-          : <div className="end-list">End of list</div>
-        }
+        <LoadMore />
+        <p>total: {total}</p>
       </div>
     );
-    }
   }
 }
 
@@ -138,12 +122,15 @@ class App extends React.Component {
  * Account is a stateless react component displaying one ethereum
  * account
  */
-function Account({ account }) {
-  return <tr>
-    <td>{account.address}</td>
-    <td>{account.total_collateral_value_in_eth.value}</td>
-    <td>{account.total_borrow_value_in_eth.value}</td>
-  </tr>;
+function Account({ account, count }) {
+  return (
+    <tr>
+      <td>{count}</td>
+      <td>{account.address}</td>
+      <td>{account.total_collateral_value_in_eth.value}</td>
+      <td>{account.total_borrow_value_in_eth.value}</td>
+    </tr>
+  );
 }
 
 export default App;
