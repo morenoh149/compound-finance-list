@@ -80,6 +80,7 @@ function App() {
       style={{
         width: '100px',
       }}
+      alt="Compound Finance"
     />
   </div>
 
