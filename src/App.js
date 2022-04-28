@@ -74,6 +74,15 @@ function App() {
       ;
   }
 
+  const Logo = () => <div>
+    <img
+      src="./compound.png"
+      style={{
+        width: '100px',
+      }}
+    />
+  </div>
+
   if (!isLoaded || fetching) {
     document.documentElement.style.cursor = 'wait';
   } else {
@@ -89,6 +98,7 @@ function App() {
   } else {
     return (
       <div className="App">
+        <Logo />
         <h1>
           Compound list of accounts at risk of liquidation
         </h1>
