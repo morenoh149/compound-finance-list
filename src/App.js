@@ -57,7 +57,10 @@ function App() {
       :
       <input
         type="number" min="0" step="0.01" value={minBorrowed}
-        onChange={e => setMinBorrowed(e.target.value)}
+        onChange={e => {
+          console.log('minborrowed', e.target)
+          setMinBorrowed(e.target.value)
+        }}
       /> 
     </>);
   }
@@ -86,9 +89,9 @@ function App() {
   } else {
     return (
       <div className="App">
-        <p>
+        <h1>
           Compound list of accounts at risk of liquidation
-        </p>
+        </h1>
         <p>total: {total}</p>
         <Filters />
         <table>
@@ -105,7 +108,7 @@ function App() {
               (account, i) => <Account
                 account={account}
                 count={i+1}
-                key={account.address}
+                key={i}
               />
             )}
           </tbody>
